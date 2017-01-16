@@ -1,0 +1,56 @@
+---
+- name: Create all indexes
+  shell: |
+    docker exec -i {{ mongo_container_name }} \
+    mongo -u parse -p {{ mongo_parse_password }}  --ssl  --sslCAFile /etc/ssl/mongo/ca.pem \
+    --host {{ parse_server_dns }} --port 27017 --authenticationDatabase parse <<EOF
+    use parse;
+    {% for collection in mongo_indexes %}
+      db.getCollection('{{collection['collection_name']}}').dropIndexes();
+      {% for index in collection['indexes'] %}
+        db.getCollection('{{collection['collection_name']}}').createIndex({ '{{index['field']}}': {{index['order']}} });
+      {% endfor %}
+    {% endfor %}
+    quit()
+    EOF
+  when: (mongo_indexes is defined) and
+        (rebuild_indexes is defined and rebuild_indexes)
+  tags:
+    - rebuild_indexes
+
+
+- name: Delete all indexes from collection {{ collection_to_clear_indexes }}
+  shell: |
+    docker exec -i {{ mongo_container_name }} \
+    mongo -u parse -p {{ mongo_parse_password }}  --ssl  --sslCAFile /etc/ssl/mongo/ca.pem \
+    --host {{ parse_server_dns }} --port 27017 --authenticationDatabase parse <<EOF
+    use parse;
+    db.getCollection('{{collection_to_clear_indexes}}').dropIndexes();
+    quit()
+    EOF
+  when: (collection_to_clear_indexes is defined) and
+        (rebuild_indexes is defined and rebuild_indexes)
+  tags:
+    - clear_indexes_for_collection
+
+
+- name: Rebuild indexes on collection {{ collection_to_rebuild_indexes }}
+  shell: |
+    docker exec -i {{ mongo_container_name }} \
+    mongo -u parse -p {{ mongo_parse_password }}  --ssl  --sslCAFile /etc/ssl/mongo/ca.pem \
+    --host {{ parse_server_dns }} --port 27017 --authenticationDatabase parse <<EOF
+    use parse;
+    {% for collection in mongo_indexes %}
+      {% if collection_to_rebuild_indexes == collection['collection_name'] %}
+        db.getCollection('{{collection['collection_name']}}').dropIndexes();
+        {% for index in collection['indexes'] %}
+          db.getCollection('{{collection['collection_name']}}').createIndex({ '{{index['field']}}': {{index['order']}} });
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+    quit()
+    EOF
+  when: (collection_to_rebuild_indexes is defined and mongo_indexes is defined) and
+        (rebuild_indexes is defined and rebuild_indexes)
+  tags:
+    - rebuild_indexes_for_collection

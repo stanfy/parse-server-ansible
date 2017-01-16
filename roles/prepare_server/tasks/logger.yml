@@ -1,0 +1,16 @@
+---
+- name: Create directory for logs
+  file: path={{ logger_log_dir }} state=directory mode=0755 owner=syslog
+
+
+- name: Create directory for job logs
+  file: path={{ logger_log_jobs_dir }} state=directory mode=0775 owner=syslog group=docker
+
+
+- name: Create syslog config {{ logger_config }}
+  template: src=syslog.conf.j2 dest={{ logger_config }}
+  notify:
+    - restart rsyslog
+
+- name: Create logrotate config
+  template: src=docker-logrotate.j2 dest={{ logger_rotate_config }}

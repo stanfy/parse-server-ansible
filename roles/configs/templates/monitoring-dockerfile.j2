@@ -1,0 +1,5 @@
+FROM python:2.7-alpine
+RUN pip install requests 
+COPY web.py /web.py
+EXPOSE 80
+CMD ["python", "/web.py"]

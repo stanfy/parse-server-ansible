@@ -1,0 +1,8 @@
+---
+- name: Git clone {{ repo_url }} branch {{ repo_branch }}
+  git:  repo={{ repo_url }}
+        dest={{ repo_dst_path }}
+        version={{ repo_branch }}
+        force=yes
+  tags:
+    - update_repo

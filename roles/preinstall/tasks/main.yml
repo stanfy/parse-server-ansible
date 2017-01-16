@@ -1,0 +1,36 @@
+---
+- name: Run preinstall script for {{ group_names[0] }}
+  local_action: |
+    command bash ./scripts/preinstall.sh {{ group_names[0] }} {{ ansible_port }}
+  when: first_init is defined and first_init
+
+
+- name: Check for ssh-agent key
+  local_action: |
+    command ssh-add -L
+  register: check_out
+  ignore_errors: yes
+  when: ansible_system == "Darwin"
+  tags:
+    - update_repo
+
+
+- set_fact:
+    ssh_key_path: ~/.ssh/id_rsa
+  when: ssh_key_path is undefined
+  tags:
+    - update_repo
+
+
+- name: Add ssh key
+  local_action: |
+    command ssh-add {{ ssh_key_path }}
+  when: check_out.failed is defined and check_out.failed
+  tags:
+    - update_repo
+
+
+- pause: prompt="Did you add your ssh key to ssh-agent?"
+  when: ansible_system != "Darwin"
+  tags:
+    - update_repo

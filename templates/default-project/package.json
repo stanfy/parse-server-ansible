@@ -1,0 +1,25 @@
+{
+  "name": "parse-server",
+  "version": "0.0.1",
+  "description": "An example Parse API server using the parse-server module",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ParsePlatform/parse-server-example"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "4.14.x",
+    "moment": "^2.17.0",
+    "newrelic": "1.36.0",
+    "parse": "1.9.2",
+    "parse-server": "2.3.1",
+    "winston": "2.3.0"
+  },
+  "scripts": {
+    "start": "npm install; pm2 start pm2.json --no-daemon"
+  },
+  "engines": {
+    "node": ">=4.3"
+  }
+}

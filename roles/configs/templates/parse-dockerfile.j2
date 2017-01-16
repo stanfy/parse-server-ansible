@@ -1,0 +1,6 @@
+FROM node:5
+ENV PARSE_HOME /parse
+RUN npm install -g pm2
+WORKDIR $PARSE_HOME
+EXPOSE 1337
+CMD ["npm", "start"]

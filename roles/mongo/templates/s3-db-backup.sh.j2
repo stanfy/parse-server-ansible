@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# {{ ansible_managed }}
+
+curDate=$(date +%Y%m%d-%H%M%S)
+backupName="{{ repo_branch }}-$curDate.gz"
+daysOfBackup=7
+
+echo '[INFO] create backup archive'
+docker exec -i {{ mongo_container_name }} \
+mongodump -u parse -p {{ mongo_parse_password }}  --ssl  --sslCAFile /etc/ssl/mongo/ca.pem \
+--host {{ parse_server_dns }} --port 27017 --db parse --gzip --archive="/backup/$backupName"
+
+echo
+echo '[INFO] cd to {{ mongo_volume }}/backup/'
+cd {{ mongo_volume }}/backup/
+
+echo '[INFO] remove old local backups'
+find . -name '*.gz' -ctime +"$daysOfBackup" -exec rm -f {} \;
+
+echo '[INFO] set locale'
+export LC_ALL=en_US.UTF-8
+
+echo '[INFO] upload the last archive to s3://{{ s3_backup_bucket }}'
+nice -n 15 aws s3 --region={{ s3_backup_region }} cp "$backupName" s3://{{ s3_backup_bucket }}

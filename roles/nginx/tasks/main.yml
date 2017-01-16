@@ -1,0 +1,23 @@
+---
+- name: Run nginx container
+  docker_container:
+    image: "nginx:stable"
+    name: "{{ nginx_container_name }}"
+    restart_policy: always
+    state: started
+    restart: yes
+    ports:
+      - "80:80"
+      - "443:443"
+    hostname: "{{ nginx_container_name }}"
+    links:
+      - "{{ parse_container_name }}:parse-server"
+      - "{{ parse_dashboard_container_name }}:parse-dashboard"
+    volumes:
+      - "{{ configs_dir }}/{{ nginx_dockerfile_dir }}/default.conf:/etc/nginx/conf.d/default.conf"
+      - "{{ ssl_dst_path }}:/etc/nginx/ssl"
+      - "{{ parse_code_dir }}/public:/var/www/public"
+    log_driver: "{{ logger_type }}"
+    log_options: "{{ log_options | regex_replace('tagName',  nginx_logger_name) }}"
+  tags:
+    - restart_nginx

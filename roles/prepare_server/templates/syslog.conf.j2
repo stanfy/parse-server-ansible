@@ -1,0 +1,24 @@
+$ModLoad imudp
+$UDPServerAddress 127.0.0.1
+$UDPServerRun {{ logger_port }}
+
+ if $programname == '{{ nginx_logger_name }}' then {
+   action(type="omfile" file="{{ logger_log_dir }}/{{ nginx_logger_name }}.log")
+   stop
+ }
+ if $programname == '{{ parse_logger_name }}' then {
+   action(type="omfile" file="{{ logger_log_dir }}/{{ parse_logger_name }}.log")
+   stop
+ }
+ if $programname == '{{ mongo_logger_name }}' then {
+   action(type="omfile" file="{{ logger_log_dir }}/{{ mongo_logger_name }}.log")
+   stop
+ }
+ if $programname == '{{ parse_dashboard_logger_name }}' then {
+   action(type="omfile" file="{{ logger_log_dir }}/{{ parse_dashboard_logger_name }}.log")
+   stop
+ }
+ if $programname == '{{ monitoring_logger_name }}' then {
+   action(type="omfile" file="{{ logger_log_dir }}/{{ monitoring_logger_name }}.log")
+   stop
+ }

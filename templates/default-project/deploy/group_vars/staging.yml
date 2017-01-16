@@ -1,0 +1,6 @@
+---
+parse_server_dns: staging.host
+
+setup_common_optional_packages:
+  - joe
+  - mc

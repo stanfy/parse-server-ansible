@@ -1,0 +1,11 @@
+---
+docker_repo_key_url: "hkp://p80.pool.sks-keyservers.net"
+docker_repo_url: "https://apt.dockerproject.org/repo"
+docker_repo_key_id: "58118E89F3A912897C070ADBF76221572C52609D"
+
+known_hosts_name: "[dev.stanfy.com]:8822"
+known_hosts_key: "[dev.stanfy.com]:8822 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCYEQNP/guxB0GFQDS+Pc46w0RIFOR0hKpz7R0h9OnH6s0DtLGJTP8EIbJ5mlfKbvRwvANnqgSaqCV06LdWb7B9Q8HRZq/vVf9vXJT0twGV8NeRXWhREZ2Fgr9b8DiNTfOqxsrYCo+T8w9i4Pnmw3Kn71BS6Sk8cWP4GK/F2sivY20dCMYSEirRkCzWcZF+W/Kjr4dBxM5ubkjae+k/hiUskHB1iYoQHzjMmo7DJrhb0/fMJgoOwF6urdwoRiE4wtkU/A/6KhHtlfwoQnzkIZpf3cQ4R5la5kQiylpqb/Xf8319LoDvt6Civ1CPybLgG1yLOREZKuPICqcq29vX0pPJ"
+
+newrelic_apt_key: 548C16BF
+newrelic_apt_url: https://download.newrelic.com/{{ newrelic_apt_key }}.gpg
+newrelic_apt_repo: "deb http://apt.newrelic.com/debian/ newrelic non-free"

@@ -1,0 +1,7 @@
+---
+- name: Add apt-key for docker
+  apt_key: keyserver={{ docker_repo_key_url }} id={{ docker_repo_key_id }}
+
+
+- name: Add docker repo
+  apt_repository: repo='deb {{ docker_repo_url }} {{ ansible_distribution | lower }}-{{ ansible_distribution_release }} main' state=present

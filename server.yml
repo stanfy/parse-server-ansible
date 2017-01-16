@@ -1,0 +1,6 @@
+---
+- name: server maintenance
+  hosts: all
+  remote_user: root
+  roles:
+    - role: maintenance

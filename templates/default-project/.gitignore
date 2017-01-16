@@ -1,0 +1,16 @@
+# To rule them ALL
+# OS X noise
+.DS_Store
+
+# TextMate noise
+*.tm_build_errors
+
+# joe's tmp files
+*.~
+
+# additional rules
+.idea/
+
+
+# node
+node_modules/

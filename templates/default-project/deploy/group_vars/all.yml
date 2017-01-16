@@ -1,0 +1,169 @@
+ansible_port: 9033
+
+### Main params ###
+repo_url: git@github.com:stanfy/parse-server-ansible.git
+repo_branch: master
+
+parse_server_dns: localhost
+parse_app_id: appId
+parse_dashboard_app_name: appName
+###################
+
+### Init Setup ###
+setup_ssh_port: 9033
+setup_common_deploy_user_name: parse
+setup_common_deploy_public_keys:
+  - ~/.ssh/id_rsa.pub
+
+setup_common_required_packages:
+  - linux-image-extra-{{ ansible_kernel }}
+  - vim
+  - ntp
+  - curl
+  - git-core
+  - docker-engine
+  - unattended-upgrades
+  - python-pip
+  - python-dev
+  - iptables-persistent
+  - awscli
+
+setup_common_pip_packages:
+  - 'docker-compose>=1.7.0'
+  - 'docker-py==1.9.0'
+
+##################
+
+
+repo_dst_path: "/home/{{ setup_common_deploy_user_name }}/parse"
+configs_dir: "/home/{{ setup_common_deploy_user_name }}/configs"
+
+# mongo
+mongo_version: 3.2.7
+mongo_container_name: parse_db
+mongo_port: 47744
+mongo_volume: /var/lib/parse_db
+mongo_logger_name: mongo
+
+# mongo passwords (autogen)--> to override
+mongo_parse_password: ''
+mongo_root_password: ''
+
+
+# ssl
+ssl_dst_path: /etc/ssl/parse
+
+
+# parse container
+parse_server_dockerfile_dir: parse-server
+parse_container_name: parse_server
+parse_code_dir: "{{ repo_dst_path }}"
+parse_job_dir: "./cloud/jobs"
+parse_logger_name: server
+
+parse_cloud_code_container_main: main.js
+
+# parse code
+parse_code_dir_list:
+  - cloud
+  - public
+  - index.js
+  - jsconfig.json
+  - package.json
+  - pm2.json
+  - newrelic.js
+
+# parse container additional env
+parse_env:
+  storage_container_s3_access_key: ''
+  storage_container_s3_secret_key: ''
+  storage_container_s3_bucket_name: ''
+  storage_container_s3_bucket_prefix: ''
+  storage_container_s3_region: 'eu-west-1'
+  storage_container_s3_direct_access: true
+  apns_sandbox_key_path: ''
+  apns_production_key_path: ''
+  apns_bundle_id: ''
+
+
+# dashboard
+parse_dashboard_dockerfile_dir: parse-dashboard
+parse_dashboard_container_name: parse_dashboard
+parse_dashboard_url_path: board
+parse_dashboard_version: 1.0.22
+parse_dashboard_logger_name: dashboard
+parse_dashboard_user: user
+
+# dashboard password (autogen) --> to override
+parse_dashboard_password: ''
+
+
+# nginx
+nginx_container_name: parse_nginx
+nginx_dockerfile_dir: parse-nginx
+nginx_logger_name: nginx
+
+
+# monitoring container
+monitoring_dockerfile_dir: monitoring
+monitoring_container_name: parse_monitoring
+monitoring_url: ''
+monitoring_port: 7998
+monitoring_logger_name: monitoring
+
+
+# logging
+logger_type: syslog
+log_options:
+  syslog-address: "udp://127.0.0.1:{{ logger_port }}"
+  tag: tagName
+logger_port: 514
+logger_log_dir: /var/log/docker
+logger_log_jobs_dir: "{{ logger_log_dir }}/jobs"
+logger_config: /etc/rsyslog.d/10-docker.conf
+logger_rotate_config: /etc/logrotate.d/docker
+
+
+# newrelic native app
+newrelic_license_key: ''
+newrelic_logfile: /var/log/newrelic/nrsysmond.log
+newrelic_override_hostname: ~
+newrelic_labels: ~
+
+
+# NTP settings
+ntp_timezone: Etc/UTC
+ntp_servers:
+  - 0.pool.ntp.org iburst
+  - 1.pool.ntp.org iburst
+  - 2.pool.ntp.org iburst
+  - 3.pool.ntp.org iburst
+
+# Cron jobs
+# cron_jobs_via_curl: true
+# cron_jobs:
+#   - { name: "some script 1",
+#       minute: "12",
+#       hour: "*",
+#       day: "*",
+#       weekday: "*",
+#       month: "*",
+#       job: "test1.js" }
+#   - { name: "some script 2",
+#       minute: "3",
+#       hour: "*/2",
+#       day: "5,12,24",
+#       weekday: "*",
+#       month: "*",
+#       job: "test2.js" }
+
+
+# S3 backup settings
+
+# s3_backup_bucket: ansible-db
+# s3_backup_aws_access_key_id: KEYID
+# s3_backup_aws_secret_access_key: PASSKEY
+# s3_backup_region: us-west-1
+# s3_backup_script: /root/s3-db-backup.sh
+# s3_backup_cron_minutes: "11"
+# s3_backup_cron_hours: "6,18"

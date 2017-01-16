@@ -1,0 +1,43 @@
+---
+- name: Create directory for all configs
+  file: path={{ configs_dir }} state=directory mode=0755
+
+
+- name: Create directory for parse
+  file: path={{ configs_dir }}/{{ parse_server_dockerfile_dir}} state=directory mode=0755
+
+
+- name: Create the dockerfile for parse
+  template: src=parse-dockerfile.j2 dest={{ configs_dir }}/{{ parse_server_dockerfile_dir }}/Dockerfile
+
+
+- name: Create directory for dashboard
+  file: path={{ configs_dir }}/{{ parse_dashboard_dockerfile_dir}} state=directory mode=0755
+
+
+- name: Create Dockerfile for dashboard
+  template: src=parse-dashboard-dockerfile.j2 dest={{ configs_dir }}/{{ parse_dashboard_dockerfile_dir}}/Dockerfile
+
+
+- name: Create parse-dashboard-config.json for dashboard
+  template: src=parse-dashboard-config.json.j2 dest={{ configs_dir }}/{{ parse_dashboard_dockerfile_dir}}/parse-dashboard-config.json
+
+
+- name: Create directory for nginx
+  file: path={{ configs_dir }}/{{ nginx_dockerfile_dir}} state=directory mode=0755
+
+
+- name: Create default.conf file
+  template: src=nginx-default.conf.j2 dest={{ configs_dir }}/{{ nginx_dockerfile_dir }}/default.conf
+
+
+- name: Create directory for monitoring
+  file: path={{ configs_dir }}/{{ monitoring_dockerfile_dir }} state=directory mode=0755
+
+
+- name: Create Dockerfile for monitoring
+  template: src=monitoring-dockerfile.j2 dest={{ configs_dir }}/{{ monitoring_dockerfile_dir }}/Dockerfile
+
+
+- name: Create web.py for monitoring
+  template: src=monitoring.py.j2 dest={{ configs_dir }}/{{ monitoring_dockerfile_dir }}/web.py

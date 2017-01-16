@@ -1,0 +1,29 @@
+---
+- name: Build monitoring image
+  docker_image:
+    path: "{{ configs_dir }}/{{ monitoring_dockerfile_dir }}"
+    name: "parse-monitoring"
+  when: "{{ monitoring_url  | trim != '' }}"
+  tags:
+    - build_monitoring
+
+- name: Restart monitoring container
+  docker_container:
+    image: "parse-monitoring:latest"
+    name: "{{ monitoring_container_name }}"
+    restart_policy: always
+    restart: yes
+    state: started
+    ports:
+      - "{{ monitoring_port }}:80"
+    hostname: "{{ monitoring_container_name }}"
+    env:
+      APPLICATION_ID: "{{ parse_app_id }}"
+      MASTER_KEY: "{{ parse_master_key }}"
+      MONITORING_URL: "{{ monitoring_url }}"
+    log_driver: "{{ logger_type }}"
+    log_options: "{{ log_options | regex_replace('tagName',  monitoring_logger_name) }}"
+  when: "{{ monitoring_url  | trim != '' }}"
+  tags:
+    - restart_monitoring
+    - build_monitoring

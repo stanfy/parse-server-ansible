@@ -1,0 +1,4 @@
+FROM node:5
+RUN npm install -g parse-dashboard@{{ parse_dashboard_version }}
+EXPOSE 4040
+CMD ["parse-dashboard"]

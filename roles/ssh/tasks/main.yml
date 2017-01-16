@@ -1,0 +1,25 @@
+---
+- name: Change ssh port
+  lineinfile: dest=/etc/ssh/sshd_config
+              regexp="^Port\s"
+              line="Port {{ setup_ssh_port }}"
+              validate='sshd -tf %s'
+              state=present
+  tags:
+    - ssh
+
+
+- name: Allow password auth for ssh
+  lineinfile: dest=/etc/ssh/sshd_config
+              regexp="^PasswordAuthentication\s"
+              line="PasswordAuthentication yes"
+              validate='sshd -tf %s'
+              state=present
+  tags:
+    - ssh
+
+
+- name: Restart ssh
+  service: name=ssh state=restarted
+  tags:
+    - ssh

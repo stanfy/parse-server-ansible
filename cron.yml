@@ -1,0 +1,5 @@
+- name: cron maintance
+  hosts: all
+  remote_user: root
+  roles:
+    - role: cron

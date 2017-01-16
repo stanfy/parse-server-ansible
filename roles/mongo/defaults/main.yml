@@ -1,0 +1,4 @@
+
+
+db_desc: main
+db_command: --storageEngine rocksdb --auth  --setParameter failIndexKeyTooLong=false --sslMode requireSSL --sslPEMKeyFile /etc/ssl/mongo/ssl.pem --sslCAFile /etc/ssl/mongo/ca.pem --sslAllowConnectionsWithoutCertificates

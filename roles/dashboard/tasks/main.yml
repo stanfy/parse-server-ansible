@@ -1,0 +1,27 @@
+---
+- name: Build parse-dashboard image
+  docker_image:
+    path: "{{ configs_dir }}/{{ parse_dashboard_dockerfile_dir }}"
+    name: "parse-dashboard"
+    tag: "{{ parse_dashboard_version }}"
+
+
+- name: Restart parse-dashboard container
+  docker_container:
+    image: "parse-dashboard:{{ parse_dashboard_version }}"
+    name: "{{ parse_dashboard_container_name }}"
+    restart_policy: always
+    restart: yes
+    state: started
+    ports:
+      - "127.0.0.1:4040:4040"
+    hostname: "{{ parse_dashboard_container_name }}"
+    links:
+      - "{{ parse_container_name }}:parse"
+    volumes:
+      - "{{ configs_dir }}/{{ parse_dashboard_dockerfile_dir}}/parse-dashboard-config.json:/parse-dashboard-config.json"
+    command: parse-dashboard --config /parse-dashboard-config.json --allowInsecureHTTP=1 --mountPath /{{ parse_dashboard_url_path }}
+    log_driver: "{{ logger_type }}"
+    log_options: "{{ log_options | regex_replace('tagName',  parse_dashboard_logger_name) }}"
+  tags:
+    - restart_dashboard

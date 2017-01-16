@@ -1,0 +1,2 @@
+- name: Check password for {{ group_names[0] }} version
+  debug: msg="{{ secret_files["ca.pem"] }}" verbosity=2

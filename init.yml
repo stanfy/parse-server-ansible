@@ -1,0 +1,41 @@
+---
+- name: preinstall tasks
+  hosts: all
+  connection: local
+  vars:
+    first_init: true
+  roles:
+    - preinstall
+
+
+- name: init server setup
+  hosts: all
+  remote_user: root
+  vars_files:
+    - "group_vars/{{ group_names[0] }}_enc.yml"
+    - "group_vars/{{ group_names[0] }}_ssl.yml"
+  roles:
+    - prepare_server
+
+
+- name: initial docker configuration
+  hosts: all
+  remote_user: '{{ setup_common_deploy_user_name }}'
+  gather_facts: no
+  vars:
+    docker_init: true
+    ansible_port: "{{ setup_ssh_port }}"
+  roles:
+    - role: configs
+    - role: mongo
+    - role: parse
+    - role: dashboard
+    - role: nginx
+    - role: monitoring
+    - { role: mongo, init_clean: true  }
+
+- name: prepare ssh
+  hosts: all
+  remote_user: root
+  roles:
+    - ssh

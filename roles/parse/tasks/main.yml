@@ -1,0 +1,49 @@
+---
+- name: Build parse-server image
+  docker_image:
+    path: "{{ configs_dir }}/{{ parse_server_dockerfile_dir }}"
+    name: "parse-server"
+
+
+- name: Prepare list of volumes for parse-server
+  debug: msg="{{ parse_code_dir }}/{{ item }}:/parse/{{ item }}"
+  with_items: "{{ parse_code_dir_list }}"
+  register: parse_volumes
+  tags:
+    - restart_parse
+
+
+- set_fact:
+   parse_volumes: "{{ parse_volumes.results | map(attribute='msg') | list }} "
+   parse_env_main:
+     parse_application_id: "{{ parse_app_id }}"
+     parse_master_key: "{{ parse_master_key }}"
+     parse_client_key: "{{ parse_client_key }}"
+     parse_restapi_key: "{{ parse_restapi_key }}"
+     parse_file_key: "{{ parse_file_key }}"
+     parse_javascript_key: "{{ parse_javascript_key }}"
+     parse_database_uri: "mongodb://parse:{{ mongo_parse_password }}@{{ parse_server_dns }}:27017/parse?ssl=true"
+     parse_cloud_code_main: "/parse/cloud/{{ parse_cloud_code_container_main }}"
+     parse_public_server_url: "https://{{ parse_server_dns }}/parse"
+  tags:
+   - restart_parse
+
+
+- name: Run parse-server container
+  docker_container:
+    image: "parse-server:latest"
+    name: "{{ parse_container_name }}"
+    restart_policy: always
+    restart: yes
+    state: started
+    ports:
+      - "127.0.0.1:1337:1337"
+    volumes: "{{ parse_volumes }}"
+    hostname: "{{ parse_container_name }}"
+    links:
+      - "{{ mongo_container_name }}:{{ parse_server_dns }}"
+    env: "{{ parse_env | combine(parse_env_main) }}"
+    log_driver: "{{ logger_type }}"
+    log_options: "{{ log_options | regex_replace('tagName',  parse_logger_name ) }}"
+  tags:
+    - restart_parse

@@ -1,0 +1,31 @@
+---
+- name: Remove cron /var/spool/cron/crontabs/{{ setup_common_deploy_user_name }}
+  cron: cron_file="/var/spool/cron/crontabs/{{ setup_common_deploy_user_name }}" state=absent
+
+
+- name: Add jobs for user {{ setup_common_deploy_user_name }} via curl exec
+  cron:
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    day: "{{ item.day }}"
+    weekday: "{{ item.weekday }}"
+    month: "{{ item.month }}"
+    job: "curl -X POST https://{{ parse_server_dns }}/parse/jobs/{{ item.job }} -H \"X-Parse-Application-Id: {{ parse_app_id }}\" -H \"X-Parse-Master-Key: {{ parse_master_key }}\" > /dev/null 2>&1"
+    name: "{{ item.name }}"
+    user: "{{ setup_common_deploy_user_name }}"
+  with_items: "{{ cron_jobs|default([]) }}"
+  when: (cron_jobs_via_curl is defined and cron_jobs_via_curl)
+
+
+- name: Add jobs for user {{ setup_common_deploy_user_name }} via local exec
+  cron:
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    day: "{{ item.day }}"
+    weekday: "{{ item.weekday }}"
+    month: "{{ item.month }}"
+    job: "docker exec {{ parse_container_name }} bash -c 'node {{ parse_job_dir }}/{{ item.job }}' >> {{ logger_log_jobs_dir }}/{{ item.job }}.log 2>&1"
+    name: "{{ item.name }}"
+    user: "{{ setup_common_deploy_user_name }}"
+  with_items: "{{ cron_jobs|default([]) }}"
+  when: (cron_jobs_via_curl is undefined)

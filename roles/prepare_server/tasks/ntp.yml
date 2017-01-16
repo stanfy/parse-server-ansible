@@ -1,0 +1,19 @@
+---
+- name: Set the correct timezone
+  file:
+    src: "/usr/share/zoneinfo/{{ ntp_timezone }}"
+    dest: /etc/localtime
+    state: link
+    force: yes
+
+
+- name: Set timezone in /etc/timezone file
+  template:
+    src: timezone.j2
+    dest: /etc/timezone
+    force: yes
+
+
+- name: Generate ntp.conf file
+  template: src=ntp.conf.j2 dest=/etc/ntp.conf
+  notify: restart ntp

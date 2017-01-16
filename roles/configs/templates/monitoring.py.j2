@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+
+from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+import requests, os
+URL = os.environ.get('MONITORING_URL')
+MasterKey = os.environ.get('MASTER_KEY')
+AppId = os.environ.get('APPLICATION_ID')
+
+def checkParse():
+    headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Master-Key': MasterKey,
+        'X-Parse-Application-Id': AppId
+    }
+    r = requests.post(URL, headers=headers)
+    return { 'responseText': r.text, 'responseCode': r.status_code }
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        result = checkParse()
+        self.send_response(result['responseCode'])
+        self.send_header('Content-type','text/html')
+        self.end_headers()
+        self.wfile.write(result['responseText'])
+        return
+try:
+    server = HTTPServer(('', 80), Handler)
+    print 'Started httpserver on port ' , 80
+    server.serve_forever()
+except KeyboardInterrupt:
+    print '^C received, shutting down the web server'
+    server.socket.close()

@@ -1,0 +1,155 @@
+
+
+# - debug: msg="reading from {{ group_names[0] }}"
+# # - debug: msg="dns {{ checkt }}"
+# - debug: msg="env {{ setup_root_password }}"
+
+
+- name: Change root password for "{{ setup_root_password }}"
+  user:
+    name=root
+    password="{{ setup_root_password |password_hash('sha512') }}"
+
+
+- name: Add deploy user "{{ setup_common_deploy_user_name }}:{{ setup_user_password }}"
+  user:
+    name="{{ setup_common_deploy_user_name }}"
+    password="{{ setup_user_password |password_hash('sha512') }}"
+    shell=/bin/bash
+
+
+- name: Add authorized keys for deploy user
+  authorized_key: user={{ setup_common_deploy_user_name }} key="{{ lookup('file', item) }}"
+  with_items: "{{ setup_common_deploy_public_keys }}"
+  tags:
+    - update_pubkey
+
+
+- name: Add deploy user to sudoers
+  lineinfile: dest=/etc/sudoers
+              regexp="{{ setup_common_deploy_user_name }} ALL"
+              line="{{ setup_common_deploy_user_name }} ALL=(ALL) NOPASSWD:ALL"
+              validate='visudo -cf %s'
+              state=present
+
+
+- name: Set hostname {{ parse_server_dns }}
+  hostname: name={{ parse_server_dns }}
+  tags:
+    - update_hostname
+
+
+- include: docker.yml
+  tags:
+    - docker
+
+
+- name: Update APT packages cache
+  apt: update_cache=yes
+  tags:
+    - update_packages
+
+
+- name: Upgrade APT to the latest packages
+  apt: upgrade=safe cache_valid_time=3600
+
+
+- name: Prevent the iptables-peristent install dialog
+  debconf: name=iptables-persistent question={{ item }} vtype=boolean value=false
+  with_items:
+    - iptables-persistent/autosave_v4
+    - iptables-persistent/autosave_v6
+  when: "'iptables-persistent' in setup_common_required_packages"
+  tags:
+    - update_packages
+
+
+- name: Install required packages
+  apt: state=installed pkg="{{ item }}"
+  with_items: "{{ setup_common_required_packages }}"
+  tags:
+    - update_packages
+
+
+- name: Upgrade pip
+  command: pip install --upgrade pip
+  tags:
+    - update_pips
+
+
+- name: Install pip modules using command
+  command: pip install -I "{{ item }}"
+  with_items: "{{ setup_common_pip_packages }}"
+  tags:
+    - update_pips
+
+
+- name: Install optional packages
+  apt: state=installed pkg="{{ item }}"
+  with_items: "{{ setup_common_optional_packages|default([]) }}"
+
+
+- include: ntp.yml
+  tags:
+    - prep_ntp
+
+- name: Add user "{{ setup_common_deploy_user_name }}" to docker group
+  user:
+    name="{{ setup_common_deploy_user_name }}"
+    groups="docker"
+    append=yes
+
+
+- name: Add dev.stanfy.com to known_hosts
+  known_hosts:  path='/etc/ssh/ssh_known_hosts'
+                name={{ known_hosts_name }}
+                key={{ known_hosts_key }}
+                state=present
+
+
+- name: Git clone {{ repo_url }} branch {{ repo_branch }}
+  git:  repo={{ repo_url }}
+        dest={{ repo_dst_path }}
+        version={{ repo_branch }}
+  remote_user: "{{ setup_common_deploy_user_name }}"
+  tags:
+    - update_repo
+
+
+- name: Create configs directory
+  file: path={{ configs_dir }} state=directory mode=0755
+  remote_user: "{{ setup_common_deploy_user_name }}"
+
+
+- name: Prepare ssl directory
+  file: path={{ ssl_dst_path }} state=directory mode=0755
+  tags:
+    - update_ssl
+
+
+- name: Copy ssl certs
+  copy:
+    dest="{{ ssl_dst_path }}/{{ item.key }}"
+    content="{{ item.value.content }}"
+    mode="{{ item.value.permissions }}"
+  with_dict: "{{ secret_files }}"
+  no_log: true
+  tags:
+    - update_ssl
+
+
+- include: logger.yml
+  when: logger_type == 'syslog'
+  tags:
+    - prep_logger
+
+
+- include: newrelic.yml
+  when: "{{ newrelic_license_key  | trim != '' }}"
+  tags:
+    - prep_newrelic
+
+
+- include: swap.yml
+  tags:
+    - prep_swap

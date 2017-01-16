@@ -1,0 +1,29 @@
+---
+- name: pre auth
+  hosts: all
+  connection: local
+  vars_files:
+    - "group_vars/{{ group_names[0] }}_ssl.yml"
+  roles:
+    - role: preauth
+
+- name: preinstall tasks
+  hosts: all
+  connection: local
+  roles:
+    - preinstall
+
+
+- name: docker maintenance
+  hosts: all
+  remote_user: '{{ setup_common_deploy_user_name }}'
+  vars:
+    docker_maintance: true
+  gather_facts: no
+  roles:
+    - role: repo
+    - role: mongo
+    - role: parse
+    - role: dashboard
+    - role: nginx
+    - role: monitoring

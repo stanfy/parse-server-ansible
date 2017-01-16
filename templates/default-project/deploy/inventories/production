@@ -1,0 +1,5 @@
+[production] #don't rename
+127.0.0.1
+
+[production:vars]
+ansible_ssh_extra_args='-o ForwardAgent=yes'

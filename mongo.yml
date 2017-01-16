@@ -1,0 +1,16 @@
+---
+- name: pre auth
+  hosts: all
+  connection: local
+  vars_files:
+    - "group_vars/{{ group_names[0] }}_ssl.yml"
+  roles:
+    - role: preauth
+
+
+- name: mongo maintenance
+  hosts: all
+  remote_user: '{{ setup_common_deploy_user_name }}'
+  gather_facts: no
+  roles:
+    - role: mongo

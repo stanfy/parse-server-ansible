@@ -1,0 +1,23 @@
+---
+- stat: path="/swap"
+  register: check_swap_file
+
+- name: Create swap file
+  command: dd if=/dev/zero of=/swap bs=1M count=2048
+  when: check_swap_file.stat.exists == False
+
+- name: Format the file for swap
+  command: mkswap /swap
+  when: check_swap_file.stat.exists == False
+
+- name: Change swap file permissions
+  file: path=/swap owner=root group=root mode=0600
+  when: check_swap_file.stat.exists == False
+
+- name: Enable swap
+  command: swapon /swap
+  when: check_swap_file.stat.exists == False
+
+- name: write swap entry in fstab
+  mount: name=none src=/swap fstype=swap opts=sw passno=0 dump=0 state=present
+  when: check_swap_file.stat.exists == False

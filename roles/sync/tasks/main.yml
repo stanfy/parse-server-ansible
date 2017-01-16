@@ -1,0 +1,7 @@
+---
+
+- name: Watching files for sync...
+  local_action: |
+    command python ./scripts/remoteFilesSync.py -H {{ inventory_hostname }}
+    -p {{ setup_ssh_port }} -u {{ setup_common_deploy_user_name }}
+    -d {{ repo_dst_path }}

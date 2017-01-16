@@ -1,0 +1,49 @@
+- name: Create aws config dir
+  file: path=/root/.aws state=directory mode=0750
+  when: (db_backup is defined and db_backup)
+  tags:
+    - prep_s3_backup
+
+
+- name: Create aws config file
+  template: src=aws-config.j2 dest=/root/.aws/config
+  when: (s3_backup_aws_access_key_id is defined) and
+        (s3_backup_aws_secret_access_key is defined) and
+        (s3_backup_region is defined) and
+        (s3_backup_bucket is defined) and
+        (db_backup is defined and db_backup)
+  tags:
+    - prep_s3_backup
+
+
+- name: Create s3 backup script
+  template: src=s3-db-backup.sh.j2 dest={{ s3_backup_script }} mode=0755
+  when: (s3_backup_script is defined) and
+        (db_backup is defined and db_backup)
+  tags:
+    - prep_s3_backup
+
+
+- name: Remove an old cron condition
+  cron: name="s3 backup" state=absent
+  when: (db_backup is defined and db_backup)
+  tags:
+    - prep_s3_backup
+
+
+- name: Create a new cron condition
+  cron: name="s3 backup" minute="{{ s3_backup_cron_minutes }}" hour="{{ s3_backup_cron_hours }}" job="{{ s3_backup_script }}" state=present
+  when: (s3_backup_cron_hours is defined) and
+        (s3_backup_cron_minutes is defined) and
+        (db_backup is defined and db_backup)
+  tags:
+    - prep_s3_backup
+
+
+- name: Run s3 backup
+  shell: |
+    "{{ s3_backup_script }}"
+  when: (s3_backup_script is defined) and
+        (db_backup is defined and db_backup)
+  tags:
+    - run_s3_backup

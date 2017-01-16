@@ -1,0 +1,26 @@
+---
+- name: Restart {{ db_desc }} mongo container
+  docker_container:
+    image: "percona/percona-server-mongodb:{{ mongo_version }}"
+    name: "{{ mongo_container_name }}"
+    restart_policy: always
+    restart: yes
+    state: started
+    ports:
+      - "{{ mongo_port }}:27017"
+    hostname: "{{ mongo_container_name }}"
+    volumes:
+      - "{{ mongo_volume }}/data:/data/db"
+      - "{{ mongo_volume }}/backup:/backup"
+      - "{{ ssl_dst_path }}:/etc/ssl/mongo"
+    etc_hosts:
+      "{{ parse_server_dns }}=127.0.0.1"
+    command: "{{ db_command }}"
+    log_driver: "{{ logger_type }}"
+    log_options: "{{ log_options | regex_replace('tagName',  mongo_logger_name) }}"
+  when: (drop_database is undefined) or
+        (init_setup is undefined)
+  tags:
+    - restart_mongo
+    - migrate_mongo
+    - restore_mongo

@@ -1,0 +1,221 @@
+---
+- set_fact:
+    db_backup_file: parse.gz
+  tags:
+    - backup_mongo
+    - restore_mongo
+
+
+- set_fact:
+    db_backup_file: migrate.gz
+  tags:
+    - migrate_mongo
+
+
+- set_fact:
+    db_backup_file: uploaded.gz
+  tags:
+    - upload_backup_mongo
+
+
+- name: Copy db from {{ db_migration_host }}
+  shell: |
+    docker exec -i {{ mongo_container_name }} \
+    mongodump -u parse -p {{ mongo_parse_password }}  --ssl  --sslCAFile /etc/ssl/mongo/ca.pem \
+    --host {{ db_migration_host }} --port {{ db_migration_port }} --db parse --gzip --archive="/backup/{{ db_backup_file }}"
+  register: db_copy_out
+  when: db_migration_host is defined and db_migration_port is defined
+  failed_when: "'error' in db_copy_out.stderr"
+  tags:
+    - migrate_mongo
+
+
+- name: Upload backup archive to server
+  copy:
+    src: "{{ upload_backup_path }}"
+    dest: "{{ mongo_volume }}/backup/{{ db_backup_file }}"
+    force: yes
+  become: true
+  become_method: sudo
+  become_user: root
+  when: upload_backup_path is defined
+  tags:
+    - upload_backup_mongo
+
+
+- name: Check archive {{ mongo_volume }}/backup/{{ db_backup_file }}
+  stat: path="{{ mongo_volume }}/backup/{{ db_backup_file }}"
+  register: archive_db
+  when: (db_restore is defined and db_restore) or
+        (db_migration_host is defined and db_migration_port is defined)
+  tags:
+    - restore_mongo
+    - migrate_mongo
+
+
+- name: Get existing archives
+  command: "ls {{ mongo_volume }}/backup/"
+  register: existing_archives
+  when: archive_db is defined and not archive_db.stat.exists
+  tags:
+    - restore_mongo
+    - migrate_mongo
+
+
+- name: Use env 'db_backup_file' with one of
+  debug: msg="{{ existing_archives.stdout_lines }}"
+  when: archive_db is defined and not archive_db.stat.exists
+  tags:
+    - restore_mongo
+    - migrate_mongo
+
+
+- fail: msg="Archive {{ db_backup_file }} was not found. See previous step"
+  when: archive_db is defined and not archive_db.stat.exists
+  tags:
+    - restore_mongo
+    - migrate_mongo
+
+
+- name: Clear {{ mongo_volume }}/data folder
+  file:
+    path: "{{ mongo_volume }}/data"
+    state: absent
+  become: true
+  become_method: sudo
+  become_user: root
+  when: (db_migration_host is defined and db_migration_port is defined) or
+        (db_restore is defined and db_restore) or
+        (db_clear_all_data is defined and db_clear_all_data)
+  tags:
+    - migrate_mongo
+    - restore_mongo
+
+
+- name: Waiting for parse availability...
+  shell: |
+    while true
+    do
+      curl -s http://127.0.0.1:1337/parse | grep authorized && break
+      sleep 5
+    done
+  when: (drop_database is defined and drop_database) and
+        (init_clean is defined and init_clean)
+  tags:
+    - check_parse_status
+
+
+- name: Drop parse DB
+  shell: |
+    docker exec -i {{ mongo_container_name }} \
+    mongo -u parse -p {{ mongo_parse_password }}  --ssl  --sslCAFile /etc/ssl/mongo/ca.pem \
+    --host {{ parse_server_dns }} --port 27017 --authenticationDatabase parse <<EOF
+    use parse
+    db.runCommand( { dropDatabase: 1 } )
+    quit()
+    EOF
+  when: (drop_database is defined and drop_database) and
+        (init_clean is defined and init_clean)
+  tags:
+    - drop_db_mongo
+
+
+- stat: path="{{ mongo_volume }}/data"
+  register: check_db_dir
+  tags:
+    - migrate_mongo
+    - restore_mongo
+
+
+- set_fact:
+    db_init: false
+    
+
+- set_fact:
+    db_init: true
+  when: check_db_dir.stat.isdir is undefined
+  tags:
+    - migrate_mongo
+    - restore_mongo
+
+
+- include: db.yml
+  vars:
+    db_desc: init
+    db_command: --storageEngine rocksdb --logpath=/dev/null --setParameter failIndexKeyTooLong=false
+  when: (db_init is defined and db_init) or
+        (db_migration_host is defined and db_migration_port is defined)
+  tags:
+    - migrate_mongo
+    - restore_mongo
+
+
+
+
+- name: Backup db to {{ db_backup_file }}
+  shell: |
+    docker exec -i {{ mongo_container_name }} \
+    mongodump -u parse -p {{ mongo_parse_password }}  --ssl  --sslCAFile /etc/ssl/mongo/ca.pem \
+    --host {{ parse_server_dns }} --port 27017 --db parse --gzip --archive="/backup/{{ db_backup_file }}"
+  register: db_backup_out
+  when: db_backup is defined and db_backup
+  failed_when: "'error' in db_backup_out.stderr"
+  tags:
+    - backup_mongo
+
+
+- name: Fetch db backup from server
+  fetch: src="{{ mongo_volume }}/backup/{{ db_backup_file }}" dest="{{ db_backup_local_path }}" flat=yes
+  when: db_backup_local_path is defined
+  tags:
+    - backup_mongo
+
+
+- name: Restore db from backup
+  shell: |
+    docker exec -i {{ mongo_container_name }} \
+    mongorestore --port 27017 --gzip --archive="/backup/{{ db_backup_file }}"
+  register: db_restore_out
+  when: (db_init is defined and db_init) and
+        (init_setup is defined and init_setup)
+  failed_when: "'error' in db_restore_out.stderr"
+  tags:
+    - migrate_mongo
+    - restore_mongo
+
+
+- name: Add users to db
+  shell: |
+    docker exec -i {{ mongo_container_name }} mongo --port 27017 <<EOF
+    use parse;
+    db.createUser({ user: "parse", pwd: "{{ mongo_parse_password }}", roles: [ { role: "dbOwner", db: "parse" } ] });
+    use admin;
+    db.createUser({ user: "admin", pwd: "{{ mongo_root_password }}", roles: [ "root" ]});
+    db.runCommand({ fsync: 1, async: true });
+    quit()
+    EOF
+  register: db_out
+  when: db_init is defined and db_init
+  failed_when: "'Error' in db_out.stdout"
+  tags:
+    - migrate_mongo
+    - restore_mongo
+
+
+- name: Auth string for parse.com
+  debug: msg="mongodb://parse:{{ mongo_parse_password }}@{{ parse_server_dns }}:{{ mongo_port }}/parse?ssl=true"
+  when: init_setup is undefined
+  tags:
+    - get_mongo_string
+
+
+- include: backup.yml
+  when: (db_backup is defined and db_backup) and
+        (s3_backup_bucket is defined) and
+        (s3_backup_script is defined)
+
+
+- include: index.yml
+
+
+- include: db.yml

@@ -1,0 +1,7 @@
+[{
+    "name"        : "parse",
+    "script"      : "index.js",
+    "watch"       : ["cloud"],
+    "ignore_watch" : ["cloud/python"],
+    "interpreter_args" : "--nolazy"
+}]

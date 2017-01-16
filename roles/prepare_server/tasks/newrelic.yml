@@ -1,0 +1,41 @@
+---
+
+- name: Add APT key for newrelic
+  apt_key:
+    id: "{{ newrelic_apt_key }}"
+    url: "{{ newrelic_apt_url }}"
+
+
+- name: Add APT repository for newrelic
+  apt_repository:
+    repo: "{{ newrelic_apt_repo }}"
+    update_cache: yes
+
+
+- name: Installing newrelic
+  apt:
+    pkg: "newrelic-sysmond"
+    state: present
+
+
+- name: Prepare newrelic config
+  template:
+    src: "nrsysmond.cfg.j2"
+    dest: "/etc/newrelic/nrsysmond.cfg"
+    owner: newrelic
+    mode: "0640"
+  notify: restart newrelic
+
+
+- name: Configuring newrelic user
+  user:
+    name: newrelic
+    groups: docker
+    append: yes
+
+
+- name: Configuring newrelic
+  service:
+    name: newrelic-sysmond
+    state: running
+    enabled: true
