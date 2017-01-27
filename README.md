@@ -81,7 +81,7 @@ Open an issue!
 
 You may find these posts useful:
 
-- [Adventures with Parse Server hosted on Digital Ocean](https://stanfy.com/blog)
+- [Adventures with Parse Server hosted on Digital Ocean](https://stanfy.com/blog/running-parse-server-on-digital-ocean/)
 - [How to change Cloud Code to be compatible with Parse Server](https://stanfy.com/blog/how-to-change-cloud-code-to-be-compatible-with-parse-server/)
 - [How we migrated to Parse Server, adventures with Heroku and why we broke up](https://stanfy.com/blog/how-we-migrated-to-parse-server-adventures-with-heroku-and-why-we-broke-up/)
 
