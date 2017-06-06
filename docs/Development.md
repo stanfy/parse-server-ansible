@@ -26,6 +26,22 @@ tag:
 ansible-playbook -i inventories/staging init.yml -t update_pubkey --ask-vault-pass
 ```
 
+### Update SSL certificate
+Prepare ssl certs somehow :)
+
+tag:
+- `update_ssl`
+
+```bash
+ansible-playbook -i inventories/staging init.yml -t update_ssl --ask-vault-pass
+```
+
+... and restart containers
+
+```bash
+ansible-playbook -i inventories/staging main.yml -t 'restart_mongo,restart_parse,restart_nginx,restart_dashboard' --ask-vault-pass
+```
+
 ### Pull repo from specific branch:
 - `repo_branch=feature-v2`
 
